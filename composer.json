@@ -1,0 +1,11 @@
+{
+    "name": "hp/roadtaxsystem",
+    "autoload": {
+        "psr-4": {
+            "Hp\\Roadtaxsystem\\": "src/"
+        }
+    },
+    "require": {
+        "phpmailer/phpmailer": "^6.10"
+    }
+}
