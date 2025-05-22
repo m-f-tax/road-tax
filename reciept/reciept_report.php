@@ -108,12 +108,6 @@ $result = $stmt->get_result();
             background-color: #007bff;
             color: white;
         }
-        .actions a {
-            margin: 0 6px;
-            font-weight: bold;
-            text-decoration: none;
-            color: #007bff;
-        }
         .footer {
             margin-top: 40px;
             font-size: 14px;
@@ -171,7 +165,6 @@ $result = $stmt->get_result();
             <th>Type</th>
             <th>Amount</th>
             <th>Due Date</th>
-            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -185,17 +178,12 @@ $result = $stmt->get_result();
                 <td><?= htmlspecialchars($row['vehicle_type']) ?></td>
                 <td>$<?= number_format($row['amount'], 2) ?></td>
                 <td><?= date('d M Y - H:i', strtotime($row['due_date'])) ?></td>
-                <td class="actions">
-                    <a href="edit_receipt.php?id=<?= $row['id'] ?>">Edit</a>
-                    <a href="delete_receipt.php?id=<?= $row['id'] ?>" onclick="return confirm('Delete this?')">Delete</a>
-                </td>
             </tr>
         <?php endwhile; else: ?>
-            <tr><td colspan="8">No records found.</td></tr>
+            <tr><td colspan="7">No records found.</td></tr>
         <?php endif; ?>
     </tbody>
 </table>
-
 
 <div class="footer">
     © 2025 All Rights Reserved – MOF.SSC-KHAATUMO
@@ -206,18 +194,19 @@ function downloadPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.text("Receipt Payment Report", 14, 15);
-    const headers = [["Plate", "Phone", "Owner", "Type", "Amount", "Due Date"]];
+    const headers = [["#", "Plate", "Phone", "Owner", "Type", "Amount", "Due Date"]];
     const data = [];
     document.querySelectorAll("#receiptTable tbody tr").forEach(row => {
         const cells = row.querySelectorAll("td");
-        if (cells.length >= 6) {
+        if (cells.length === 7) {
             data.push([
                 cells[0].innerText,
                 cells[1].innerText,
                 cells[2].innerText,
                 cells[3].innerText,
                 cells[4].innerText,
-                cells[5].innerText
+                cells[5].innerText,
+                cells[6].innerText
             ]);
         }
     });
@@ -227,7 +216,6 @@ function downloadPDF() {
 
 function downloadExcel() {
     const table = document.getElementById("receiptTable").cloneNode(true);
-    for (let row of table.rows) row.deleteCell(-1);
     const wb = XLSX.utils.table_to_book(table, { sheet: "Receipts" });
     XLSX.writeFile(wb, "receipt_report.xlsx");
 }

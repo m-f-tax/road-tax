@@ -1,17 +1,19 @@
-<?php
+<?php 
 session_start();
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../login");
     exit;
 }
 
-$success = $error = "";
 $conn = new mysqli("localhost", "root", "", "roadtaxsystem");
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+$success = $error = "";
+
+// Save form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register_vehicle'])) {
     $platenumber   = $_POST['platenumber'];
     $vehicletype   = $_POST['carname'];
     $owner         = $_POST['owner'];
@@ -28,158 +30,159 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt = $conn->prepare("INSERT INTO vehiclemanagement (platenumber, vehicletype, carname, owner, model, phone, registration_date, user_id) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssssssi", $platenumber, $vehicletype, $vehicletype, $owner, $model, $phone, $registration, $user_id);
-
         if ($stmt->execute()) {
-            $stmt2 = $conn->prepare("SELECT amount FROM vehicle_types WHERE name = ? LIMIT 1");
-            $stmt2->bind_param("s", $vehicletype);
-            $stmt2->execute();
-            $stmt2->bind_result($three_month_amount);
-            $stmt2->fetch();
-            $stmt2->close();
-
-            if (!empty($three_month_amount)) {
-                $amount_type = '3bilood';
-                $due_date = date("Y-m-d", strtotime($registration . " +3 months"));
-
-                $stmt3 = $conn->prepare("INSERT INTO tblgenerate (fullname, platenumber, vehicletype, amount, amount_type, due_date) 
-                                         VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt3->bind_param("sssdds", $owner, $platenumber, $vehicletype, $three_month_amount, $amount_type, $due_date);
-                if ($stmt3->execute()) {
-                    $success = "✅ Vehicle registered and charged 3-bilood successfully!";
-                } else {
-                    $error = "❌ Failed to charge vehicle.";
-                }
-                $stmt3->close();
-            } else {
-                $error = "❌ Vehicle type not found.";
-            }
+            $success = "✅ Vehicle registered successfully!";
         } else {
             $error = "❌ Error saving vehicle: " . $stmt->error;
         }
-
         $stmt->close();
     }
-
-    $conn->close();
 }
+
+// Report data
+$carname_result = $conn->query("SELECT DISTINCT carname FROM vehiclemanagement ORDER BY carname");
+$search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : "";
+$car_filter = isset($_GET['carname']) ? $conn->real_escape_string($_GET['carname']) : "";
+$month_filter = isset($_GET['month']) ? $conn->real_escape_string($_GET['month']) : "";
+
+$where = [];
+if (!empty($search)) {
+    $where[] = "(platenumber LIKE '%$search%' OR phone LIKE '%$search%')";
+}
+if (!empty($car_filter)) {
+    $where[] = "carname = '$car_filter'";
+}
+if (!empty($month_filter)) {
+    $where[] = "MONTH(registration_date) = '$month_filter'";
+}
+$where_clause = count($where) ? "WHERE " . implode(" AND ", $where) : "";
+$sql = "SELECT * FROM vehiclemanagement $where_clause ORDER BY id DESC";
+$result = $conn->query($sql);
+$total = $result->num_rows;
+
+// For dropdown inside modal
+$types = $conn->query("SELECT name FROM vehicle_types");
 ?>
+
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Add Vehicle</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f9ff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .form-container {
-            background: #fff;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            width: 350px;
-        }
-        h2 {
-            text-align: center;
-            color: #007bff;
-        }
-        label {
-            font-weight: bold;
-            margin-top: 10px;
-            display: block;
-        }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        input.error-border {
-            border: 2px solid red;
-        }
-        input[type="submit"] {
-            margin-top: 20px;
-            background: #007bff;
-            color: white;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        input[type="submit"]:hover {
-            background: #0056b3;
-        }
-        .message {
-            text-align: center;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-        }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-    </style>
+    <title>Vehicle Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
 
-<div class="form-container">
-    <h2>Register Vehicle</h2>
+<div class="container py-4">
+    <h2 class="text-primary text-center mb-4">🚗 Vehicle Reports & Registration</h2>
 
-    <?php if (!empty($success)) echo "<div class='message success'>$success</div>"; ?>
-    <?php if (!empty($error)) echo "<div class='message error'>$error</div>"; ?>
+    <?php if (!empty($success)) echo "<div class='alert alert-success'>$success</div>"; ?>
+    <?php if (!empty($error)) echo "<div class='alert alert-danger'>$error</div>"; ?>
 
-    <form method="POST" onsubmit="return validateInputs();">
-        <label for="platenumber">Plate Number</label>
-        <input type="text" id="platenumber" name="platenumber" required>
+    <!-- Button trigger modal -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <form class="d-flex gap-2" method="GET">
+            <input class="form-control" type="text" name="search" placeholder="Search Plate or Phone" value="<?= htmlspecialchars($search) ?>">
+            <select class="form-control" name="carname">
+                <option value="">-- Filter by Car Name --</option>
+                <?php while ($row = $carname_result->fetch_assoc()): ?>
+                    <option value="<?= $row['carname'] ?>" <?= $car_filter == $row['carname'] ? 'selected' : '' ?>>
+                        <?= $row['carname'] ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+            <select class="form-control" name="month">
+                <option value="">-- Filter by Month --</option>
+                <?php for ($m = 1; $m <= 12; $m++): ?>
+                    <option value="<?= $m ?>" <?= $month_filter == $m ? 'selected' : '' ?>>
+                        <?= date('F', mktime(0, 0, 0, $m, 10)) ?>
+                    </option>
+                <?php endfor; ?>
+            </select>
+            <button class="btn btn-primary">Filter</button>
+        </form>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#registerModal"> Register Vehicle</button>
+    </div>
 
-        <label for="carname">Vehicle Type</label>
-        <select id="carname" name="carname" required>
-            <option value="">-- Select Type --</option>
-            <?php
-            $conn = new mysqli("localhost", "root", "", "roadtaxsystem");
-            $types = $conn->query("SELECT name FROM vehicle_types");
-            while ($row = $types->fetch_assoc()) {
-                echo "<option value='" . htmlspecialchars($row['name']) . "'>" . htmlspecialchars($row['name']) . "</option>";
-            }
-            $conn->close();
-            ?>
-        </select>
+    <div class="alert alert-info">Total Vehicles Found: <strong><?= $total ?></strong></div>
 
-        <label for="owner">Owner Name</label>
-        <input type="text" id="owner" name="owner" required>
-
-        <label for="model">Vehicle Model</label>
-        <input type="text" id="model" name="model" required>
-
-        <label for="phone">Phone</label>
-        <input type="text" id="phone" name="phone" required>
-
-        <label for="registration">Registration Date</label>
-        <input type="date" id="registration" name="registration" required>
-
-        <input type="submit" value="Save">
-    </form>
+    <table class="table table-bordered bg-white">
+        <thead class="table-primary">
+            <tr>
+                <th>#</th>
+                <th>Plate</th>
+                <th>Owner</th>
+                <th>Phone</th>
+                <th>Car Name</th>
+                <th>Registration</th>
+                <th>User ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php $i = 1; while ($row = $result->fetch_assoc()): ?>
+                <tr>
+                    <td><?= $i++ ?></td>
+                    <td><?= htmlspecialchars($row['platenumber']) ?></td>
+                    <td><?= htmlspecialchars($row['owner']) ?></td>
+                    <td><?= htmlspecialchars($row['phone']) ?></td>
+                    <td><?= htmlspecialchars($row['carname']) ?></td>
+                    <td><?= htmlspecialchars($row['registration_date']) ?></td>
+                    <td><?= htmlspecialchars($row['user_id']) ?></td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
 </div>
 
-<script>
-function validateInputs() {
-    const owner = document.getElementById('owner');
-    const phone = document.getElementById('phone');
+<!-- Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-primary" id="registerModalLabel">Register New Vehicle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="register_vehicle" value="1">
+        <div class="mb-2">
+            <label>Plate Number</label>
+            <input type="text" name="platenumber" class="form-control" required>
+        </div>
+        <div class="mb-2">
+            <label>Vehicle Type</label>
+            <select name="carname" class="form-control" required>
+                <option value="">-- Select Type --</option>
+                <?php while ($row = $types->fetch_assoc()): ?>
+                    <option value="<?= htmlspecialchars($row['name']) ?>"><?= htmlspecialchars($row['name']) ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        <div class="mb-2">
+            <label>Owner</label>
+            <input type="text" name="owner" class="form-control" required>
+        </div>
+        <div class="mb-2">
+            <label>Model</label>
+            <input type="text" name="model" class="form-control" required>
+        </div>
+        <div class="mb-2">
+            <label>Phone</label>
+            <input type="text" name="phone" class="form-control" required>
+        </div>
+        <div class="mb-2">
+            <label>Registration Date</label>
+            <input type="date" name="registration" class="form-control" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">💾 Save Vehicle</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    const ownerValid = /^[A-Za-z\s]+$/.test(owner.value);
-    const phoneValid = /^[0-9]+$/.test(phone.value);
-
-    owner.classList.toggle('error-border', !ownerValid);
-    phone.classList.toggle('error-border', !phoneValid);
-
-    return ownerValid && phoneValid;
-}
-</script>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
+<?php $conn->close(); ?>

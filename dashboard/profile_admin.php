@@ -7,6 +7,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
 
 $conn = new mysqli("localhost", "root", "", "roadtaxsystem");
 $user_id = $_SESSION['user_id'];
+$success = $error = "";
+
+// Update profile
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $conn->real_escape_string($_POST['username']);
+    $email = $conn->real_escape_string($_POST['email']);
+
+    if (!empty($username) && !empty($email)) {
+        $stmt = $conn->prepare("UPDATE users SET username = ?, email = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $username, $email, $user_id);
+        if ($stmt->execute()) {
+            $success = "✅ Profile updated successfully.";
+        } else {
+            $error = "❌ Failed to update profile.";
+        }
+    } else {
+        $error = "❌ All fields are required.";
+    }
+}
 
 $stmt = $conn->prepare("SELECT username, email, role, created_at FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
@@ -18,83 +37,119 @@ $user = $result->fetch_assoc();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Profile</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #cceeff,rgb(214, 214, 255));
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+  <meta charset="UTF-8">
+  <title>Edit Profile</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f5;
+      margin: 0;
+      padding: 0;
+    }
 
-        .profile-card {
-            background: #ffffff;
-            padding: 40px 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            max-width: 420px;
-            width: 100%;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
+    .container {
+      max-width: 420px;
+      margin: 60px auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
 
-        .profile-card:hover {
-            transform: translateY(-5px);
-        }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
 
-        .profile-card img {
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            border: 3px solidrgb(51, 40, 167);
-            box-shadow: 0 0 10px rgba(0, 128, 0, 0.3);
-        }
+    .form-group {
+      margin-bottom: 15px;
+    }
 
-        .profile-card h2 {
-            margin-top: 15px;
-            font-size: 24px;
-            color: #007bff;
-        }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #444;
+    }
 
-        .profile-card p {
-            font-size: 16px;
-            margin: 8px 0;
-            color: #444;
-        }
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
 
-        .profile-card p strong {
-            color:rgb(55, 40, 167);
-        }
+    .info-box {
+      background: #f8f8f8;
+      padding: 10px;
+      border-left: 4px solid #007bff;
+      margin: 10px 0;
+      font-size: 14px;
+    }
 
-        .back-button {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 10px 25px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
+    .btn {
+      width: 100%;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
 
-        .back-button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    .btn:hover {
+      background-color: #0056b3;
+    }
+
+    .back-link {
+      display: block;
+      margin-top: 15px;
+      text-align: center;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .success {
+      color: green;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="profile-card">
-    <img src="img/logo3.PNG" alt="Admin">
-    <h2><?php echo htmlspecialchars($user['username']); ?></h2>
-    <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-    <p><strong>Role:</strong> <?php echo htmlspecialchars($user['role']); ?></p>
-    <p><strong>Registered:</strong> <?php echo htmlspecialchars($user['created_at']); ?></p>
-    <a class="back-button" href="dashboard">← Back to Dashboard</a>
+<div class="container">
+  <h2>Admin Profile</h2>
+  <?php if ($success) echo "<div class='success'>$success</div>"; ?>
+  <?php if ($error) echo "<div class='error'>$error</div>"; ?>
+
+  <form method="POST">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" name="username" value="<?php echo htmlspecialchars($user['username']); ?>" required>
+    </div>
+
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required>
+    </div>
+
+    <div class="info-box"><strong>Role:</strong> <?php echo htmlspecialchars($user['role']); ?></div>
+    <div class="info-box"><strong>Registered:</strong> <?php echo htmlspecialchars($user['created_at']); ?></div>
+
+    <button class="btn" type="submit">Update Profile</button>
+  </form>
+
+
 </div>
 
 </body>

@@ -58,9 +58,6 @@ $years = range(date("Y"), date("Y") - 10);
         th { background: #007bff; color: white; padding: 12px; }
         td { padding: 10px; text-align: center; border-bottom: 1px solid #eee; }
         .no-data { text-align: center; color: #999; padding: 20px; }
-        .action-links a { padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; margin: 0 3px; }
-        .edit { background: #ffc107; color: black; }
-        .delete { background: #dc3545; color: white; }
     </style>
 </head>
 <body>
@@ -106,7 +103,6 @@ $years = range(date("Y"), date("Y") - 10);
                 <th>Amount</th>
                 <th>Due Date</th>
                 <th>Duration</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -123,13 +119,9 @@ $years = range(date("Y"), date("Y") - 10);
                     <td>$<?= number_format($row['amount'], 2) ?></td>
                     <td><?= htmlspecialchars($row['due_date']) ?></td>
                     <td><?= htmlspecialchars($row['amount_type']) ?></td>
-                    <td class="action-links">
-                        <a href="edit.php?id=<?= $row['id'] ?>" class="edit">Edit</a>
-                        <a href="delete.php?id=<?= $row['id'] ?>" class="delete" onclick="return confirm('Delete this?');">Delete</a>
-                    </td>
                 </tr>
             <?php endwhile; else: ?>
-                <tr><td colspan="8" class="no-data">No records found.</td></tr>
+                <tr><td colspan="7" class="no-data">No records found.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -144,7 +136,7 @@ function downloadPDF() {
     const data = [];
     document.querySelectorAll("#reportTable tbody tr").forEach(row => {
         const cells = row.querySelectorAll("td");
-        if (cells.length >= 7) {
+        if (cells.length === 7) {
             data.push([
                 cells[0].innerText, cells[1].innerText, cells[2].innerText,
                 cells[3].innerText, cells[4].innerText, cells[5].innerText,
@@ -158,7 +150,6 @@ function downloadPDF() {
 
 function downloadExcel() {
     const table = document.getElementById("reportTable").cloneNode(true);
-    for (let row of table.rows) row.deleteCell(-1); // remove Actions column
     const wb = XLSX.utils.table_to_book(table, { sheet: "Report" });
     XLSX.writeFile(wb, "payment_report.xlsx");
 }
