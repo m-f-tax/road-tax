@@ -28,10 +28,11 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `password_requests` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
-  `requested_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `requested_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
