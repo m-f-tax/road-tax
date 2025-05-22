@@ -130,7 +130,7 @@ while ($row = $pie_result->fetch_assoc()) {
 <body>
 
 <div class="top-bar">
-  <h2>📊 Dashboard Summaries</h2>
+  <h2>📊 Dashboard Summary</h2>
   <div class="profile-box">
     <a href="settings" class="emoji" data-title="Setting">⚙️</a>
     <a href="../generate/generate_report" class="emoji" data-title="Report">📊</a>
