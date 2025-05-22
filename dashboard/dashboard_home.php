@@ -125,6 +125,7 @@ while ($row = $pie_result->fetch_assoc()) {
 </head>
 <body>
 
+<<<<<<< HEAD
 <div class="wrapper">
   <div class="topbar">
     <h2>📊 Dashboard Overview</h2>
@@ -135,6 +136,22 @@ while ($row = $pie_result->fetch_assoc()) {
       <a href="manage_users" title="Users">👥</a>
       <a href="profile_admin" title="Profile"><img src="img/logo3.PNG" style="width: 35px; height: 35px; border-radius: 50%;"></a>
     </div>
+=======
+<div class="top-bar">
+<<<<<<< HEAD
+  <h2>📊 Dashboard Summary</h2>
+=======
+  <h2>📊 Dashboard summery</h2>
+>>>>>>> 959c197 (Initial commit)
+  <div class="profile-box">
+    <a href="settings" class="emoji" data-title="Setting">⚙️</a>
+    <a href="../generate/generate_report" class="emoji" data-title="Report">📊</a>
+    <a href="add_vehicle_type" class="emoji" data-title="Add Type">🚘</a>
+    <a href="manage_users" class="emoji" data-title="Users">👥</a>
+    <a href="profile_admin">
+      <img src="img/logo3.PNG" alt="Admin" title="Admin Profile">
+    </a>
+>>>>>>> 04a4914 (Initial commit)
   </div>
 
   <div class="stats">
