@@ -139,9 +139,9 @@ while ($row = $pie_result->fetch_assoc()) {
 =======
 <div class="top-bar">
 <<<<<<< HEAD
-  <h2>📊 Dashboard Summary</h2>
+  <h2>📊 Dashboard</h2>
 =======
-  <h2>📊 Dashboard summery</h2>
+  <h2>📊 Dashboard</h2>
 >>>>>>> 959c197 (Initial commit)
   <div class="profile-box">
     <a href="settings" class="emoji" data-title="Setting">⚙️</a>
